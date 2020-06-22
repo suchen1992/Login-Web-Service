@@ -32,7 +32,7 @@ class GreeterServiceImpl final : public Greeter::Service {
     std::string prefix("Hello again ");
     reply->set_message(prefix + request->name());
     return Status::OK;
-  }
+  } 
 };
 
 void RunServer() {
