@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package login;
+
+service LoginService {
+  rpc SignUp(CommonRequest) returns (SignUpReply) {}
+
+  rpc Login(CommonRequest) returns (LoginReply) {}
+
+  rpc CheckStatus(CheckRequest) returns (stream CheckReply) {}
+}
+
+message CommonRequest {
+  string user_name = 1;
+  string password = 2;
+}
+
+message SignUpReply {
+  int32 resp_code = 1;
+  string message = 2;
+}
+
+message LoginReply {
+  int32 resp_code = 1;
+  string message = 2;
+  string token = 3;
+}
+
+message CheckRequest {
+  string user_name = 1;
+  string token = 2;
+}
+
+message CheckReply {
+  string token = 1;
+}

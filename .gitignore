@@ -1,0 +1,9 @@
+.idea
+.vscode
+
+grpc/src/bazel-bin
+grpc/src/bazel-out
+grpc/src/bazel-src
+grpc/src/bazel-testlogs
+
+grpc/src/bazel-3.3.0-installer-linux-x86_64.sh

@@ -1,0 +1,22 @@
+version: '2'
+
+services:
+
+  ### Mysql container #########################################
+
+  mysql:
+      build: ./mysql
+      ports:
+        - "3306:3306"
+      privileged: true
+      command: --init-file /data/application/init.sql
+      volumes:
+        - ./mysql/init.sql:/data/application/init.sql
+      environment: 
+        - MYSQL_DATABASE=login_service
+        - MYSQL_USER=manager
+        - MYSQL_PASSWORD=sc92115
+        - MYSQL_ROOT_PASSWORD=sc92115
+      restart: always
+      networks:
+        - default
