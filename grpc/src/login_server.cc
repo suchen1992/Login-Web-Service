@@ -12,11 +12,7 @@
 #include <openssl/rand.h>
 #include "mysqlpool.h"
 
-#ifdef BAZEL_BUILD
 #include "login.grpc.pb.h"
-#else
-#include "login.grpc.pb.h"
-#endif
 
 #define  MAX_RECEIVE_SIZE 5000
 #define  MAX_SEND_SIZE 5000
@@ -72,9 +68,9 @@ class LoginServiceImpl final : public LoginService::Service {
       saltStr+=tmp;
     }
 
-    printf("pass: %s\n", pwd.c_str());
-    printf("ITERATION: %u\n", HASH_ITERATION);
-    printf("salt: %s\n", saltStr.c_str());
+    cout << "pass: " << pwd << endl;
+    cout << "ITERATION: : " << HASH_ITERATION << endl;
+    cout << "salt: " << saltStr << endl;
     string cypher = getCyphertext(saltStr, pwd);
     cout<<cypher<<endl;
     // insert db
@@ -131,18 +127,20 @@ class LoginServiceImpl final : public LoginService::Service {
 
   Status CheckStatus(ServerContext* context, const CheckRequest* request, ServerWriter<CheckReply>* writer) {
     cout << "check" << endl;
-    CheckReply reply;
     string username = request->user_name();
+    string expectToken = request->token();
     bool loopFlag = true;
     while(loopFlag) {
       CheckReply reply;
       map<string, string>::iterator iter = tokenMap.find(username);
+      string cacheToken;
       if (iter != tokenMap.end()) {
-        reply.set_token(iter -> second);
+        cacheToken = iter -> second;
+        reply.set_token(cacheToken);
       } else {
         loopFlag = false;
       }
-      loopFlag = writer -> Write(reply) && loopFlag;
+      loopFlag = writer -> Write(reply) && (expectToken.compare(cacheToken) == 0);
     }
     return Status::OK;
   }
@@ -199,9 +197,7 @@ class LoginServiceImpl final : public LoginService::Service {
     bool isSucc = true;
     char insertSql[200] = {'\0'};
     sprintf(insertSql, "INSERT INTO user_info(user_name,pwd) VALUES ('%s','%s')", username.c_str(), cypherTxt.c_str());
-    // cout << insertOSql<< endl;
-    if(mysql_query(connection,insertSql))
-    {
+    if(mysql_query(connection,insertSql)) {
       cout << "insertSql was error" << endl;
       isSucc = false;
     }
@@ -249,8 +245,7 @@ void read ( const string& filename, string& data )
 {
   ifstream file ( filename.c_str (), ios::in );
 
-	if ( file.is_open () )
-	{
+	if (file.is_open ()) {
 		stringstream ss;
 		ss << file.rdbuf ();
 
@@ -267,24 +262,19 @@ void RunServer() {
   service.initMysql();
 	std::string server_address ( "localhost:50051" );
 
-	// std::string key;
-	// std::string cert;
-	// std::string root;
-	// read ( "server.crt", cert );
-	// read ( "server.key", key );
-	// read ( "ca.crt", root );
-	// grpc::SslServerCredentialsOptions::PemKeyCertPair keycert =
-	// {
-	// 	key,
-	// 	cert
-	// };
-	// grpc::SslServerCredentialsOptions sslOps;
-	// sslOps.pem_root_certs = root;
-	// sslOps.pem_key_cert_pairs.push_back ( keycert );
+	std::string key;
+	std::string cert;
+	std::string root;
+	read ( "../../../../../server.crt", cert );
+	read ( "../../../../../server.key", key );
+	read ( "../../../../../ca.crt", root );
+	grpc::SslServerCredentialsOptions::PemKeyCertPair keycert = { key, cert };
+	grpc::SslServerCredentialsOptions sslOps;
+	sslOps.pem_root_certs = root;
+	sslOps.pem_key_cert_pairs.push_back ( keycert );
 
   ServerBuilder builder;
-	// builder.AddListeningPort(server_address, grpc::SslServerCredentials( sslOps ));
-  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+	builder.AddListeningPort(server_address, grpc::SslServerCredentials( sslOps ));
   builder.RegisterService(&service);
   unique_ptr<Server> server(builder.BuildAndStart());
   cout << "Server listening on " << server_address << endl;
